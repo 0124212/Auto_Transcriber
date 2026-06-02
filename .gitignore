@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# User input/output data
+queue/*
+!queue/.gitkeep
+processed/*
+!processed/.gitkeep
+complete/
+*.zip
+*.log
+
+# Audio and video files
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.aac
+*.ogg
+*.opus
+*.wma
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+
+# Whisper/model/cache artifacts
+.cache/
+models/
+*.pt
+*.pth
+*.bin
+
+# Environment and secrets
+.env
+.env.*
+*.key
+*.pem
+credentials*
+secrets*
