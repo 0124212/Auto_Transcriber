@@ -4,28 +4,31 @@ Whisper-powered lecture transcription with a modern web UI. Works on **Windows, 
 
 Drop audio/video files → get clean, AI-ready transcripts.
 
-## Quick Start
+## Install
+
+### Windows — the easy way (no Python, no setup)
+
+1. Go to **Releases** (right side of the GitHub page) and download `AutoTranscriber-win64.zip`
+2. Unzip it anywhere
+3. Double-click **`AutoTranscriber.exe`**
+4. Your browser opens with the app. Done.
+
+First transcription downloads the speech model once (~3 GB, automatic) — after that it's instant.
+Tip: paste a free [Groq key](https://console.groq.com/keys) in Engine settings to skip the download entirely and transcribe ~10× faster in the cloud.
+
+### Windows — from source (double-click)
+
+Double-click **`START.bat`**. It installs Python/FFmpeg itself if they're missing, then opens the app.
+
+### macOS / Linux — one command
 
 ```bash
-# 1. Clone or download
 git clone https://github.com/0124212/Auto_Transcriber.git
 cd Auto_Transcriber
-
-# 2. Launch (auto-installs everything)
-python start.py
+python3 start.py
 ```
 
-Opens at **http://localhost:8080**. That's it.
-
-### Prerequisites
-
-- **Python 3.9+** — [python.org](https://www.python.org/downloads/)
-- **FFmpeg** — [ffmpeg.org](https://ffmpeg.org/download.html)
-  - macOS: `brew install ffmpeg`
-  - Linux: `sudo apt install ffmpeg` or `sudo dnf install ffmpeg`
-  - Windows: `winget install ffmpeg`
-
-Everything else is installed automatically on first run.
+Opens at **http://localhost:8080**. Python packages auto-install on first run; you only need FFmpeg (`brew install ffmpeg` / `sudo apt install ffmpeg`).
 
 ## Usage
 

@@ -1,0 +1,44 @@
+name: Build Windows EXE
+
+# Push a tag like v0.1.0 and a ready-to-run Windows build appears
+# under GitHub Releases a few minutes later. Nothing to do by hand.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU-only dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt pyinstaller
+
+      - name: Check FFmpeg present (needed by tests, not the bundle)
+        run: |
+          ffmpeg -version
+        continue-on-error: true
+
+      - name: Build EXE
+        run: pyinstaller autotranscriber.spec --noconfirm
+
+      - name: Zip portable folder
+        run: Compress-Archive -Path dist\AutoTranscriber\* -DestinationPath AutoTranscriber-win64.zip
+
+      - name: Publish to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: AutoTranscriber-win64.zip
+          generate_release_notes: true

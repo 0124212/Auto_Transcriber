@@ -1,85 +1,52 @@
 @echo off
-REM Conda launcher for Auto Transcriber
-
+REM =====================================================================
+REM  Auto Transcriber — double-click to run. Opens the web UI in your browser.
+REM  First run installs what's missing automatically. Just wait.
+REM =====================================================================
 cd /d "%~dp0"
-
-REM Fix OpenMP duplicate library conflict (PyTorch + Intel MKL on Windows)
 set KMP_DUPLICATE_LIB_OK=TRUE
 
-set CONDA_ENV=transcriber
+REM --- find Python (py launcher first, it's the Windows standard) ---
+where py >nul 2>&1
+if %errorlevel%==0 ( set "PY=py -3" & goto :have_python )
+where python >nul 2>&1
+if %errorlevel%==0 ( set "PY=python" & goto :have_python )
 
-where conda >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo ========================================
-    echo ERROR: Conda not found!
-    echo ========================================
-    echo.
-    echo Install Anaconda or Miniconda, then reopen this terminal.
-    echo.
-    pause
-    exit /b 1
-)
-
-conda run -n %CONDA_ENV% python --version >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo ========================================
-    echo Creating Conda Environment
-    echo ========================================
-    echo.
-    echo Creating environment: %CONDA_ENV%
-    conda create -n %CONDA_ENV% python=3.11 -y
-    if errorlevel 1 (
-        echo ERROR: Failed to create Conda environment.
-        pause
-        exit /b 1
-    )
-)
-
-REM Check if required packages are installed
-conda run -n %CONDA_ENV% python -c "import whisper, torch, numpy, ffmpeg, pydub; from pydub import AudioSegment" >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo ========================================
-    echo Installing Required Packages
-    echo ========================================
-    echo.
-    echo Installing packages into Conda environment: %CONDA_ENV%
-    echo This may take a few minutes. Please wait...
-    echo.
-
-    conda run -n %CONDA_ENV% python -m pip install --upgrade pip
-    conda run -n %CONDA_ENV% python -m pip install -r requirements.txt
-    if errorlevel 1 (
-        echo ERROR: Failed to install packages!
-        pause
-        exit /b 1
-    )
-
-    echo.
-    echo ========================================
-    echo Packages Installed Successfully!
-    echo ========================================
-    echo.
-    timeout /t 2 >nul
-) else (
-    echo All required packages are installed.
-)
-
-REM Launch the GUI using the Conda environment
 echo.
-echo Starting Auto Transcriber...
-conda run -n %CONDA_ENV% python transcribe_gui.py
-
+echo  Python not found. Attempting automatic install via winget...
+echo.
+winget install -e --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
 if errorlevel 1 (
     echo.
-    echo ========================================
-    echo ERROR: Failed to start the GUI
-    echo ========================================
-    echo.
-    echo Check that all dependencies are installed.
+    echo  Automatic install failed. Please install Python manually:
+    echo    https://www.python.org/downloads/
+    echo  (tick "Add python.exe to PATH" during setup)
     echo.
     pause
     exit /b 1
+)
+echo.
+echo  Python installed. Please DOUBLE-CLICK this file again to start.
+echo.
+pause
+exit /b 0
+
+:have_python
+REM --- ffmpeg check (start.py also checks, this preinstalls it silently) ---
+where ffmpeg >nul 2>&1
+if errorlevel 1 (
+    echo  FFmpeg not found. Installing via winget (one-time)...
+    winget install -e --id Gyan.FFmpeg --silent --accept-package-agreements --accept-source-agreements
+)
+
+echo.
+echo  Starting Auto Transcriber...
+echo.
+%PY% start.py %*
+
+if errorlevel 1 (
+    echo.
+    echo  Something went wrong — the error is above.
+    echo.
+    pause
 )

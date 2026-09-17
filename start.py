@@ -67,6 +67,8 @@ def install_packages(pip, packages, label="dependencies"):
 
 
 def ensure_deps():
+    if getattr(sys, 'frozen', False):
+        return  # bundled EXE: everything is baked in, nothing to install
     pip = find_pip()
     if pip is None:
         print("  ✗ pip not found. Install pip or use a full Python distribution.")
@@ -170,4 +172,9 @@ def main():
 
 
 if __name__ == "__main__":
+    try:
+        from multiprocessing import freeze_support
+        freeze_support()  # no-op unless frozen on Windows
+    except ImportError:
+        pass
     main()
