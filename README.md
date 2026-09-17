@@ -126,4 +126,4 @@ MP3, MP4, WAV, M4A, FLAC, OGG, WebM, AVI, MOV, MKV, AAC, WMA, MPEG — anything 
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE). Free forever, open source.
