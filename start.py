@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Auto Transcriber — Universal Launcher
+Mojidori — Universal Launcher
 Works on Windows, macOS, and Linux. No external dependencies beyond Python 3.9+.
 
 Usage:
@@ -29,7 +29,7 @@ WHISPER_PACKAGES = ['openai-whisper', 'faster-whisper', 'torch', 'numpy', 'ffmpe
 
 BANNER = r"""
   ┌─────────────────────────────────────┐
-  │        AUTO  TRANSCRIBER            │
+  │             MOJIDORI                │
   │  Whisper-powered lecture transcription  │
   └─────────────────────────────────────┘
 """
@@ -137,7 +137,7 @@ def launch_cli():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Auto Transcriber Launcher")
+    parser = argparse.ArgumentParser(description="Mojidori Launcher")
     parser.add_argument("--cli", action="store_true", help="Launch CLI mode instead of web UI")
     parser.add_argument("--port", type=int, default=8080, help="Web UI port (default: 8080)")
     parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")

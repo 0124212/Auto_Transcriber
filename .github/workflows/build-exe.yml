@@ -32,13 +32,13 @@ jobs:
         continue-on-error: true
 
       - name: Build EXE
-        run: pyinstaller autotranscriber.spec --noconfirm
+        run: pyinstaller mojidori.spec --noconfirm
 
       - name: Zip portable folder
-        run: Compress-Archive -Path dist\AutoTranscriber\* -DestinationPath AutoTranscriber-win64.zip
+        run: Compress-Archive -Path dist\Mojidori\* -DestinationPath Mojidori-win64.zip
 
       - name: Publish to Releases
         uses: softprops/action-gh-release@v2
         with:
-          files: AutoTranscriber-win64.zip
+          files: Mojidori-win64.zip
           generate_release_notes: true

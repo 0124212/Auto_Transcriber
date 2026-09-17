@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Auto Transcriber</title>
+  <title>Mojidori</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -46,7 +46,7 @@
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold text-slate-800">🎙️ Auto Transcriber</h1>
+        <h1 class="text-xl font-bold text-slate-800">🎙️ Mojidori</h1>
         <p class="text-sm text-slate-500">Whisper-powered lecture transcription</p>
       </div>
       <div class="flex items-center gap-3">
@@ -207,7 +207,7 @@
           <div class="w-full bg-slate-100 rounded-full h-2 mb-3">
             <div id="progressBar" class="bg-blue-600 h-2 rounded-full progress-bar" style="width: 0%"></div>
           </div>
-          <div id="console"><span class="t-dim">auto-transcriber ready — drop files, pick settings, hit start.
+          <div id="console"><span class="t-dim">mojidori ready — drop files, pick settings, hit start.
 everything the engine does will stream here, line by line.</span>
 </div>
         </div>
@@ -276,12 +276,12 @@ function saveSettings() {
       if (!el) continue;
       s[id] = el.type === 'checkbox' ? el.checked : el.value;
     }
-    localStorage.setItem('autotranscriber', JSON.stringify(s));
+    localStorage.setItem('mojidori', JSON.stringify(s));
   } catch (e) {}
 }
 function loadSettings() {
   let s = null;
-  try { s = JSON.parse(localStorage.getItem('autotranscriber')); } catch (e) {}
+  try { s = JSON.parse(localStorage.getItem('mojidori')); } catch (e) {}
   if (!s) return false;
   if (typeof s.targetAuto === 'boolean') targetAuto = s.targetAuto;
   if (s.provider) $('#provider').value = s.provider;

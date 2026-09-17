@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller bundle for Auto Transcriber (Windows EXE).
+"""PyInstaller bundle for Mojidori (Windows EXE).
 Built automatically by .github/workflows/build-exe.yml — never build by hand.
 Single-folder bundle: everything the app needs sits next to the EXE,
 so queue/ and processed/ live beside it, fully portable.
@@ -36,7 +36,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='AutoTranscriber',
+    name='Mojidori',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -50,5 +50,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=False,
-    name='AutoTranscriber',
+    name='Mojidori',
 )

@@ -1,6 +1,6 @@
 @echo off
 REM =====================================================================
-REM  Auto Transcriber — double-click to run. Opens the web UI in your browser.
+REM  Mojidori — double-click to run. Opens the web UI in your browser.
 REM  First run installs what's missing automatically. Just wait.
 REM =====================================================================
 cd /d "%~dp0"
@@ -40,7 +40,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo  Starting Auto Transcriber...
+echo  Starting Mojidori...
 echo.
 %PY% start.py %*
 

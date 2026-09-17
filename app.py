@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Auto Transcriber — Flask web UI.
+Mojidori — Flask web UI.
 Cross-platform: works identically on Windows, macOS, and Linux.
 """
 
@@ -427,14 +427,14 @@ def api_sse(channel):
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Auto Transcriber Web UI")
+    parser = argparse.ArgumentParser(description="Mojidori Web UI")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()
 
     url = f"http://{args.host}:{args.port}"
-    print(f"\n  Auto Transcriber")
+    print(f"\n  Mojidori")
     print(f"  ────────────────────────────────")
     print(f"  Open: {url}")
     print(f"  Queue: {QUEUE_DIR}")

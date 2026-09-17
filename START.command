@@ -1,5 +1,5 @@
 #!/bin/bash
-# Simple launcher for Auto Transcriber
+# Simple launcher for Mojidori
 # Double-click this file on Mac to start the transcription system
 
 # Change to the script's directory
@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 
 echo ""
 echo "========================================"
-echo "Auto Transcriber"
+echo "Mojidori"
 echo "========================================"
 echo ""
 
@@ -85,7 +85,7 @@ fi
 
 # Launch the GUI
 echo ""
-echo "Starting Auto Transcriber..."
+echo "Starting Mojidori..."
 $PYTHON_CMD transcribe_gui.py
 
 if [ $? -ne 0 ]; then

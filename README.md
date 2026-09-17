@@ -1,4 +1,4 @@
-# Auto Transcriber
+# Mojidori (文字取り) — catch every word
 
 Whisper-powered lecture transcription with a modern web UI. Works on **Windows, macOS, and Linux**.
 
@@ -8,9 +8,9 @@ Drop audio/video files → get clean, AI-ready transcripts.
 
 ### Windows — the easy way (no Python, no setup)
 
-1. Go to **Releases** (right side of the GitHub page) and download `AutoTranscriber-win64.zip`
+1. Go to **Releases** (right side of the GitHub page) and download `Mojidori-win64.zip`
 2. Unzip it anywhere
-3. Double-click **`AutoTranscriber.exe`**
+3. Double-click **`Mojidori.exe`**
 4. Your browser opens with the app. Done.
 
 First transcription downloads the speech model once (~3 GB, automatic) — after that it's instant.
@@ -23,8 +23,8 @@ Double-click **`START.bat`**. It installs Python/FFmpeg itself if they're missin
 ### macOS / Linux — one command
 
 ```bash
-git clone https://github.com/0124212/Auto_Transcriber.git
-cd Auto_Transcriber
+git clone https://github.com/0124212/Mojidori.git
+cd Mojidori
 python3 start.py
 ```
 
@@ -84,7 +84,7 @@ python transcribe_lecture.py -m large-v3 -l en
 ## Project Structure
 
 ```
-Auto_Transcriber/
+Mojidori/
 ├── start.py              # Universal launcher
 ├── app.py                # Flask web UI server
 ├── core.py               # Transcription engine (importable)

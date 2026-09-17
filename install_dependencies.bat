@@ -1,6 +1,6 @@
 @echo off
 echo ============================================================
-echo Installing dependencies for Auto Transcriber
+echo Installing dependencies for Mojidori
 echo ============================================================
 echo.
 echo This will install the required Python packages.

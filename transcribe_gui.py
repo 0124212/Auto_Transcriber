@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Modern GUI launcher for Auto Transcriber
+Modern GUI launcher for Mojidori
 Provides an easy-to-use interface with presets and advanced settings
 Cross-platform: Works on Windows and macOS
 """
@@ -93,7 +93,7 @@ LANGUAGES = {
 class TranscriptionGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Auto Transcriber")
+        self.root.title("Mojidori")
         self.root.geometry("620x850")
         self.root.resizable(True, True)
         self.root.minsize(620, 850)
@@ -206,7 +206,7 @@ class TranscriptionGUI:
         # Title
         title_label = tk.Label(
             main_container,
-            text="Auto Transcriber",
+            text="Mojidori",
             font=TITLE_FONT,
             fg=TEXT_PRIMARY,
             bg=BG_MAIN
