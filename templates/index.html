@@ -166,6 +166,10 @@
         <section class="bg-white rounded-xl border border-slate-200 p-5">
           <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Queue</h2>
           <div id="queueList" class="text-sm text-slate-500"></div>
+          <label class="flex items-center gap-2 text-sm text-slate-700 mt-3 pt-3 border-t border-slate-100">
+            <input type="checkbox" id="watch" class="rounded border-slate-300">
+            👀 Watch folder <span class="text-xs text-slate-400">— auto-start when new files land</span>
+          </label>
         </section>
       </div>
 
@@ -211,7 +215,13 @@ everything the engine does will stream here, line by line.</span>
 
         <!-- Past transcripts -->
         <div class="bg-white rounded-xl border border-slate-200 p-5">
-          <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">Processed Transcripts</h2>
+          <div class="flex items-center justify-between mb-3 gap-3">
+            <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wider">Processed Transcripts</h2>
+            <select id="promptPick" title="Attach a prompt when copying"
+                    class="text-xs rounded-lg border border-slate-300 p-1.5 text-slate-600 max-w-[12rem]">
+              <option value="none">Copy: transcript only</option>
+            </select>
+          </div>
           <div id="processedList" class="space-y-2 text-sm"></div>
         </div>
 
@@ -230,12 +240,54 @@ let targetAuto = true;
 // ── init ──
 document.addEventListener('DOMContentLoaded', async () => {
   detectDevice();
-  refreshQueue();
-  refreshProcessed();
   setupDropZone();
   await loadProviders();
+  await loadPrompts();
+  if (!loadSettings()) applyPreset('balanced');
   onTargetInput();
+  refreshQueue();
+  refreshProcessed();
+  setInterval(refreshQueue, 10000);   // watch-mode poll
+  document.addEventListener('change', saveSettings);
+  document.addEventListener('input', saveSettings);
+  $('#processedList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-copy-folder]');
+    if (btn) copyPack(btn.dataset.copyFolder, btn.dataset.copyFile);
+  });
 });
+
+// ── remember settings (localStorage, this browser only) ──
+const SETTING_IDS = ['provider', 'model', 'language', 'normalize', 'timestamps',
+  'segments', 'highpass', 'targetDb', 'watch', 'promptPick'];
+function saveSettings() {
+  try {
+    const s = { targetAuto };
+    for (const id of SETTING_IDS) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      s[id] = el.type === 'checkbox' ? el.checked : el.value;
+    }
+    localStorage.setItem('autotranscriber', JSON.stringify(s));
+  } catch (e) {}
+}
+function loadSettings() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem('autotranscriber')); } catch (e) {}
+  if (!s) return false;
+  if (typeof s.targetAuto === 'boolean') targetAuto = s.targetAuto;
+  if (s.provider) $('#provider').value = s.provider;
+  onProviderChange();
+  for (const id of SETTING_IDS) {
+    if (id === 'provider' || !(id in s)) continue;
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (id === 'model' && s.provider !== $('#provider').value) continue;
+    if (el.type === 'checkbox') el.checked = !!s[id];
+    else el.value = s[id];
+  }
+  onTargetInput();
+  return true;
+}
 
 function detectDevice() {
   fetch('/api/queue').then(() => {
@@ -254,7 +306,6 @@ async function loadProviders() {
     PROVIDERS = await r.json();
   } catch (e) { PROVIDERS = { local: { models: [], default_model: '', needs_key: false } }; }
   onProviderChange();
-  applyPreset('balanced');
 }
 
 function onProviderChange() {
@@ -370,7 +421,11 @@ async function uploadFiles(fileList) {
   refreshQueue();
 }
 
-// ── queue / processed ──
+// ── queue / processed + watch mode ──
+let running = false;
+let firstPoll = true;
+let lastSeen = new Set();
+
 async function refreshQueue() {
   try {
     const r = await fetch('/api/queue');
@@ -382,6 +437,20 @@ async function refreshQueue() {
           <span class="text-slate-700 truncate">${f.name}</span>
           <span class="text-xs text-slate-400 ml-2 shrink-0">${(f.size / 1024 / 1024).toFixed(1)} MB</span>
         </div>`).join('');
+
+    // Watch mode: auto-start when genuinely new files land (not on first paint,
+    // not while busy, not for files already seen — failed ones stay put).
+    const names = new Set(files.map(f => f.name));
+    if (firstPoll) {
+      firstPoll = false;
+    } else if ($('#watch')?.checked && !running && files.length > 0) {
+      const fresh = [...names].filter(n => !lastSeen.has(n));
+      if (fresh.length > 0) {
+        conPrint('t-api', `👁 watch: new file(s) → auto-starting (${fresh.join(', ')})`);
+        startTranscription();
+      }
+    }
+    lastSeen = names;
   } catch (e) {}
 }
 
@@ -395,14 +464,46 @@ async function refreshProcessed() {
         <div class="py-2 border-b border-slate-100 last:border-0">
           <span class="font-medium text-slate-700">📁 ${f.name}</span>
           ${f.transcripts.map(t => `
-            <a href="#" onclick="viewTranscript('${f.name}','${t}'); return false"
-               class="block text-blue-600 hover:underline ml-5">📄 ${t}</a>`).join('')}
+            <div class="flex items-center gap-2 ml-5">
+              <a href="#" onclick="viewTranscript('${f.name}','${t}'); return false"
+                 class="text-blue-600 hover:underline">📄 ${t}</a>
+              <button data-copy-folder="${f.name}" data-copy-file="${t}" title="Copy transcript (+ selected prompt) to clipboard"
+                 class="text-xs px-2 py-0.5 rounded border border-slate-300 text-slate-500 hover:bg-slate-50">📋 copy</button>
+            </div>`).join('')}
         </div>`).join('');
   } catch (e) {}
 }
 
+// ── copy-with-prompt ──
+async function loadPrompts() {
+  try {
+    const r = await fetch('/api/prompts');
+    const prompts = await r.json();
+    $('#promptPick').innerHTML = prompts.map(p =>
+      `<option value="${p.id}">${p.id === 'none' ? 'Copy: transcript only' : 'Copy: transcript + ' + p.title}</option>`).join('');
+  } catch (e) {}
+}
+
+async function copyPack(folder, file) {
+  const prompt = $('#promptPick')?.value || 'none';
+  try {
+    const r = await fetch(`/api/pack?folder=${encodeURIComponent(folder)}&file=${encodeURIComponent(file)}&prompt=${prompt}`);
+    if (!r.ok) return conPrint('t-err', '[ERR] copy failed');
+    const text = await r.text();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    conPrint('t-ok', `[OK] copied ${file}${prompt !== 'none' ? ' + prompt' : ''} (${(text.length / 1024).toFixed(0)} KB) — paste into your AI`);
+  } catch (e) { conPrint('t-err', '[ERR] copy failed: ' + e.message); }
+}
+
 // ── transcription ──
 async function startTranscription() {
+  running = true;
   const provider = $('#provider').value;
   const p = PROVIDERS[provider] || {};
   if (p.needs_key && !p.key_configured && !$('#apiKey').value.trim()) {
@@ -501,6 +602,7 @@ function showResults(result) {
       <div class="text-sm text-slate-700 mb-2">
         <strong>${result.successful}</strong> of ${result.total} transcribed
         ${result.failed > 0 ? `<span class="text-red-500">(${result.failed} failed)</span>` : '<span class="text-green-600">✓ all good</span>'}
+        ${result.ping ? '<span class="text-slate-400">· 📱 ping sent</span>' : ''}
       </div>
       ${result.results.map(r => `
         <div class="text-sm ${r.ok ? 'text-green-700' : 'text-red-600'}">
@@ -510,6 +612,7 @@ function showResults(result) {
 }
 
 function resetUI() {
+  running = false;
   $('#goBtn').disabled = false;
   $('#goBtn').textContent = '▶ Start Transcription';
   setTimeout(() => { $('#progressBar').style.width = '0%'; }, 1500);

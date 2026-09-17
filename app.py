@@ -18,7 +18,8 @@ from flask import Flask, render_template, request, jsonify, Response, send_from_
 from core import (
     PRESETS, LANGUAGES, MODEL_SIZES, PROVIDERS,
     get_audio_files, transcribe_file, transcribe_queue,
-    resolve_api_key, test_api_key,
+    resolve_api_key, test_api_key, archive_original,
+    extract_class_code, maybe_ping_ntfy,
 )
 
 app = Flask(__name__)
@@ -27,8 +28,17 @@ app.secret_key = os.urandom(24)
 BASE_DIR = Path(__file__).parent.resolve()
 QUEUE_DIR = BASE_DIR / "queue"
 PROCESSED_DIR = BASE_DIR / "processed"
+ARCHIVE_DIR = BASE_DIR / "archive"
 QUEUE_DIR.mkdir(exist_ok=True)
 PROCESSED_DIR.mkdir(exist_ok=True)
+ARCHIVE_DIR.mkdir(exist_ok=True)
+
+# Copy-with-prompt packs: id -> prompt file (allowlist, never user paths)
+PROMPTS = {
+    "cheat": "prompt_cheat_sheet.md",
+    "notes": "prompt_condensed_notes.md",
+    "summary": "prompt_descriptive_summary.md",
+}
 
 # SSE progress channels: one queue per client session
 _progress_channels: dict[str, queue.Queue] = {}
@@ -197,8 +207,12 @@ def api_transcribe():
                 include_segments=opts["segments"], device=opts["device"],
                 provider=opts["provider"], api_key=opts["api_key"],
                 target_dbfs=opts["target_dbfs"], highpass=opts["highpass"],
+                archive_dir=ARCHIVE_DIR,
                 progress_cb=_progress,
             )
+            result["ping"] = maybe_ping_ntfy(
+                "Transcription done",
+                f"{result['successful']}/{result['total']} files transcribed")
             if channel:
                 _emit(channel, "done", json.dumps(result))
         except Exception as e:
@@ -242,10 +256,17 @@ def api_transcribe_file():
                 target_dbfs=opts["target_dbfs"], highpass=opts["highpass"],
                 progress_cb=_progress,
             )
+            try:
+                dest = archive_original(src, ARCHIVE_DIR)
+                _progress(f"[OK] Original archived → archive/{dest.parent.name}/{dest.name}")
+            except Exception as e:
+                _progress(f"[WARN] Could not archive original: {e}")
+            ping = maybe_ping_ntfy("Transcription done", f"{filename} transcribed")
             if channel:
                 _emit(channel, "done", json.dumps({
                     "file": filename,
                     "ok": True,
+                    "ping": ping,
                     **result["stats"],
                 }))
         except Exception as e:
@@ -255,6 +276,48 @@ def api_transcribe_file():
     t = threading.Thread(target=_run, daemon=True)
     t.start()
     return jsonify(status="started")
+
+
+@app.route("/api/prompts")
+def api_prompts():
+    """Copy-with-prompt choices: transcript-only + prompt templates."""
+    out = [{"id": "none", "title": "Transcript only"}]
+    for pid, fname in PROMPTS.items():
+        title = pid
+        try:
+            first = (BASE_DIR / fname).read_text(encoding="utf-8").splitlines()[0]
+            title = first.lstrip("# ").strip() or pid
+        except OSError:
+            pass
+        out.append({"id": pid, "title": title})
+    return jsonify(out)
+
+
+@app.route("/api/pack")
+def api_pack():
+    """Combined copy pack: prompt template + transcript, ready to paste into AI."""
+    folder = request.args.get("folder", "")
+    file = request.args.get("file", "")
+    prompt = request.args.get("prompt", "none")
+
+    target = (PROCESSED_DIR / folder / file).resolve()
+    if (PROCESSED_DIR.resolve() not in target.parents
+            or target.suffix != ".txt" or not target.is_file()):
+        return jsonify(error="not found"), 404
+    text = target.read_text(encoding="utf-8")
+
+    if prompt != "none":
+        fname = PROMPTS.get(prompt)
+        if not fname:
+            return jsonify(error="unknown prompt"), 400
+        pfile = (BASE_DIR / fname).resolve()
+        if BASE_DIR.resolve() not in pfile.parents or not pfile.is_file():
+            return jsonify(error="prompt missing"), 404
+        pack = (pfile.read_text(encoding="utf-8").rstrip()
+                + f"\n\n---\n\n# TRANSCRIPT: {file}\n\n" + text)
+    else:
+        pack = text
+    return Response(pack, mimetype="text/plain")
 
 
 @app.route("/api/sse/<channel>")

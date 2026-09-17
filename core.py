@@ -22,6 +22,7 @@ import re
 import shutil
 import tempfile
 import time
+import urllib.request
 import zipfile
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -806,6 +807,7 @@ def transcribe_queue(
     api_key: str = None,
     target_dbfs: float = None,
     highpass: bool = True,
+    archive_dir: Path = None,
     progress_cb: Callable = None,
 ) -> dict:
     files = get_audio_files(queue_folder)
@@ -829,6 +831,12 @@ def transcribe_queue(
                 include_segments=include_segments, device=device, provider=provider,
                 api_key=api_key, target_dbfs=target_dbfs, highpass=highpass,
                 progress_cb=_log)
+            if archive_dir is not None:
+                try:
+                    dest = archive_original(f, archive_dir)
+                    _log(f"[OK] Original archived → archive/{dest.parent.name}/{dest.name}")
+                except Exception as e:
+                    _log(f"[WARN] Could not archive original: {e}")
             results.append({"file": f.name, "ok": True, **r["stats"]})
             successful += 1
         except Exception as e:
@@ -850,6 +858,40 @@ def archive_to_zip(original_file: Path, zip_path: Path, class_code: str) -> bool
         mode = 'a' if zip_path.exists() else 'w'
         with zipfile.ZipFile(zip_path, mode, zipfile.ZIP_DEFLATED) as zf:
             zf.write(original_file, f"{class_code}/{original_file.name}")
+        return True
+    except Exception:
+        return False
+
+
+def archive_original(src: Path, archive_dir: Path) -> Path:
+    """Move a finished original into archive/<ClassCode>/ (collision-safe)."""
+    dest_dir = archive_dir / extract_class_code(src.name)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / src.name
+    n = 1
+    while dest.exists():
+        dest = dest_dir / f"{src.stem}_{n}{src.suffix}"
+        n += 1
+    shutil.move(str(src), str(dest))
+    return dest
+
+
+def maybe_ping_ntfy(subject: str, message: str) -> bool:
+    """POST a phone notification via ntfy if NTFY_TOPIC is configured.
+
+    Env: NTFY_URL (default https://ntfy.sh), NTFY_TOPIC (unset = silent no-op).
+    Never raises — returns True only if the ping was accepted.
+    """
+    topic = os.environ.get("NTFY_TOPIC", "").strip()
+    if not topic:
+        return False
+    url = os.environ.get("NTFY_URL", "https://ntfy.sh").rstrip("/")
+    try:
+        req = urllib.request.Request(
+            f"{url}/{topic}", data=message.encode("utf-8"),
+            headers={"Title": subject[:200]}, method="POST")
+        with urllib.request.urlopen(req, timeout=10):
+            pass
         return True
     except Exception:
         return False

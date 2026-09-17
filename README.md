@@ -42,8 +42,14 @@ python start.py --no-browser # Don't auto-open browser
 
 1. **Drop files** onto the web page (or click to browse)
 2. **Pick a preset** (Fast / Balanced / Best Quality)
-3. **Click Start** — watch real-time progress
-4. **View transcripts** in the results panel
+3. **Click Start** — watch real-time progress in the live console
+4. **Copy** any transcript with one click — optionally bundled with a study prompt, ready to paste into your AI
+
+Quality-of-life extras:
+- **👀 Watch mode** — tick the box in Queue and the app auto-starts whenever new files land. Drop & forget.
+- **📦 Auto-archive** — finished originals move to `archive/<ClassCode>/`, so the queue never double-processes.
+- **📱 Done ping** — set `NTFY_TOPIC` in `.env` and your phone buzzes when a long job finishes.
+- **💾 Settings memory** — provider, model, sliders, and toggles persist across restarts.
 
 ### CLI (legacy)
 
