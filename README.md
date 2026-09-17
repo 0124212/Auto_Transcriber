@@ -61,15 +61,15 @@ python transcribe_lecture.py -m large-v3 -l en
 
 ## Features
 
-- **Cross-platform** — identical experience on Windows, macOS, Linux
-- **Modern web UI** — drag & drop, presets, real-time progress
-- **Auto-install** — Python packages installed on first run
-- **AI-ready output** — clean paragraphs, optional timestamps
-- **Audio normalization** — auto-enhances quiet recordings
-- **Batch processing** — process multiple files at once
-- **Multiple models** — tiny through large-v3
+- **Free, always** — local engines cost $0 forever; Groq cloud tier is free too. Only OpenAI bills.
+- **Two local engines** — classic Whisper or faster-whisper (~4× quicker, same accuracy)
+- **Clean transcripts** — artifact cleanup, verify-flags on shaky segments, word counts, reading time
+- **Organized outputs** — `.txt` transcript + `.srt`/`.vtt` subtitles + raw JSON, per lecture
+- **Modern web UI** — drag & drop, presets, live terminal console
+- **Watch mode** — auto-starts when new files land in `queue/`
+- **Audio pipeline** — high-pass, mono, 16 kHz, 2-pass gain, limiter, verified by re-measure
+- **Batch processing** — whole queue in one run, originals auto-archived by class code
 - **10 languages** — auto-detect or specify manually
-- **Raw JSON output** — full segment data with confidence scores
 
 ## Model Sizes
 

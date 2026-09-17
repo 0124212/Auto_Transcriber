@@ -25,7 +25,7 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 MIN_PYTHON = (3, 9)
 REQUIRED_PACKAGES = ['flask']
-WHISPER_PACKAGES = ['openai-whisper', 'torch', 'numpy', 'ffmpeg-python', 'pydub', 'audioop-lts']
+WHISPER_PACKAGES = ['openai-whisper', 'faster-whisper', 'torch', 'numpy', 'ffmpeg-python', 'pydub', 'audioop-lts']
 
 BANNER = r"""
   ┌─────────────────────────────────────┐

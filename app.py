@@ -5,6 +5,8 @@ Cross-platform: works identically on Windows, macOS, and Linux.
 """
 
 import os
+import shutil
+import subprocess
 import sys
 import json
 import queue
@@ -71,7 +73,83 @@ def index():
 @app.route("/api/queue")
 def api_queue():
     files = get_audio_files(QUEUE_DIR)
-    return jsonify([{"name": f.name, "size": f.stat().st_size} for f in files])
+    out = []
+    for f in files:
+        done = (PROCESSED_DIR / f.stem / f"{f.stem}_transcript.txt").exists()
+        out.append({"name": f.name, "size": f.stat().st_size, "done": done})
+    return jsonify(out)
+
+
+def _queue_target(filename: str) -> Path | None:
+    """Resolve a queue filename, confined to QUEUE_DIR. None if illegal."""
+    target = (QUEUE_DIR / filename).resolve()
+    if QUEUE_DIR.resolve() not in target.parents or not target.is_file():
+        return None
+    return target
+
+
+@app.route("/api/queue/<path:filename>", methods=["DELETE"])
+def api_queue_delete(filename):
+    target = _queue_target(filename)
+    if target is None:
+        return jsonify(error="not found"), 404
+    target.unlink()
+    return jsonify(deleted=filename)
+
+
+@app.route("/api/queue/clear", methods=["POST"])
+def api_queue_clear():
+    removed = 0
+    for f in get_audio_files(QUEUE_DIR):
+        try:
+            f.unlink()
+            removed += 1
+        except OSError:
+            pass
+    return jsonify(cleared=removed)
+
+
+def _probe_minutes(path: Path) -> float | None:
+    """Audio duration in minutes via ffprobe (instant, no decode)."""
+    if not shutil.which("ffprobe"):
+        return None
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", str(path)],
+            capture_output=True, text=True, timeout=15)
+        return float(r.stdout.strip()) / 60
+    except (ValueError, subprocess.SubprocessError, OSError):
+        return None
+
+
+OPENAI_USD_PER_MIN = 0.006
+
+
+@app.route("/api/estimate")
+def api_estimate():
+    """Cost/time clarity: queue durations + what each engine costs. Free unless OpenAI."""
+    files = []
+    total = 0.0
+    unknown = False
+    for f in get_audio_files(QUEUE_DIR):
+        mins = _probe_minutes(f)
+        if mins is None:
+            unknown = True
+        else:
+            total += mins
+        files.append({"name": f.name, "minutes": round(mins, 1) if mins else None})
+    return jsonify({
+        "files": files,
+        "total_min": round(total, 1),
+        "unknown": unknown,
+        "costs": {
+            "local": 0.0,
+            "fast": 0.0,
+            "groq": 0.0,
+            "openai": round(total * OPENAI_USD_PER_MIN, 2),
+        },
+    })
 
 
 @app.route("/api/processed")
@@ -80,18 +158,22 @@ def api_processed():
     if PROCESSED_DIR.exists():
         for d in sorted(PROCESSED_DIR.iterdir()):
             if d.is_dir():
-                transcripts = list(d.glob("*_transcript.txt"))
-                folders.append({
-                    "name": d.name,
-                    "transcripts": [t.name for t in transcripts],
-                })
+                outputs = sorted(
+                    [t.name for t in d.iterdir()
+                     if t.is_file() and t.suffix in (".txt", ".srt", ".vtt", ".md")])
+                # transcript first, then the rest
+                outputs.sort(key=lambda n: (0 if n.endswith("_transcript.txt") else 1, n))
+                folders.append({"name": d.name, "transcripts": outputs})
     return jsonify(folders)
+
+
+VIEWABLE = {".txt", ".srt", ".vtt", ".md"}
 
 
 @app.route("/api/transcript/<path:folder>/<path:filename>")
 def api_transcript(folder, filename):
     f = PROCESSED_DIR / folder / filename
-    if f.exists() and f.suffix == ".txt":
+    if f.exists() and f.suffix in VIEWABLE:
         return Response(f.read_text(encoding="utf-8"), mimetype="text/plain")
     return jsonify(error="not found"), 404
 
